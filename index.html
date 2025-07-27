@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kantor Absensi - Login & Absensi</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f7fa;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 360px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 32px 24px 24px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #2255a4;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+      color: #333;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      border: 1px solid #c2c2c2;
+      border-radius: 6px;
+      font-size: 16px;
+      background: #f8fafb;
+      transition: border .2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      border: 1.5px solid #2255a4;
+      outline: none;
+      background: #fff;
+    }
+    button {
+      width: 100%;
+      padding: 10px 0;
+      background: #2255a4;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 17px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background .2s;
+    }
+    button:hover {
+      background: #17407b;
+    }
+    .error {
+      color: #c00;
+      background: #ffe4e4;
+      padding: 8px 10px;
+      margin-bottom: 16px;
+      border-radius: 5px;
+      font-size: 15px;
+      text-align: center;
+    }
+    .success {
+      color: #1a8700;
+      background: #eaffea;
+      padding: 8px 10px;
+      margin-bottom: 16px;
+      border-radius: 5px;
+      font-size: 15px;
+      text-align: center;
+    }
+    .absensi-list {
+      margin-top: 22px;
+    }
+    .absensi-list table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .absensi-list th, .absensi-list td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 15px;
+      text-align: left;
+    }
+    .absensi-list th {
+      background: #f1f6fc;
+      color: #2255a4;
+    }
+    .logout-btn {
+      background: #eee;
+      color: #2255a4;
+      border: 1px solid #2255a4;
+      margin-top: 16px;
+      font-size: 15px;
+      font-weight: bold;
+      transition: background .2s, color .2s;
+    }
+    .logout-btn:hover {
+      background: #2255a4;
+      color: #fff;
+    }
+    @media (max-width: 430px) {
+      .container {
+        padding: 18px 5vw 18px 5vw;
+        max-width: 99vw;
+      }
+      .absensi-list th, .absensi-list td {
+        font-size: 14px;
+        padding: 6px 2px;
+      }
+      h2 { font-size: 1.3em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="login-container">
+    <h2>Login Absensi</h2>
+    <div id="login-error" class="error" style="display:none"></div>
+    <form id="login-form" autocomplete="off">
+      <label for="username">Nama Pengguna</label>
+      <input type="text" id="username" required placeholder="Masukkan nama pengguna">
+      <label for="password">Kata Sandi</label>
+      <input type="password" id="password" required placeholder="Masukkan kata sandi">
+      <button type="submit">Masuk</button>
+    </form>
+  </div>
+  
+  <div class="container" id="absensi-container" style="display:none">
+    <h2>Absensi Kantor</h2>
+    <div id="absen-success" class="success" style="display:none"></div>
+    <div>
+      <p>Selamat datang, <span id="user-name"></span>!</p>
+      <button id="absen-btn">Absen Masuk</button>
+      <button id="logout-btn" class="logout-btn">Keluar</button>
+    </div>
+    <div class="absensi-list">
+      <h3>Riwayat Absensi Hari Ini</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="absensi-table-body">
+          <!-- Isi absensi -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // USER DUMMY (bisa diubah sesuai kebutuhan)
+    const users = [
+      { username: "admin", password: "admin123" },
+      { username: "budi", password: "budi123" },
+      { username: "sari", password: "sari123" }
+    ];
+
+    // Ambil elemen
+    const loginContainer = document.getElementById('login-container');
+    const absensiContainer = document.getElementById('absensi-container');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const userNameSpan = document.getElementById('user-name');
+    const absenBtn = document.getElementById('absen-btn');
+    const absenSuccess = document.getElementById('absen-success');
+    const absensiTableBody = document.getElementById('absensi-table-body');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Simpan sesi login dan absensi di localStorage
+    function setSession(user) {
+      localStorage.setItem("absensiUser", JSON.stringify(user));
+    }
+    function getSession() {
+      return JSON.parse(localStorage.getItem("absensiUser") || "null");
+    }
+    function clearSession() {
+      localStorage.removeItem("absensiUser");
+    }
+
+    function getTodayKey(username) {
+      const today = new Date();
+      const tgl = today.toISOString().slice(0,10);
+      return `absensi_${username}_${tgl}`;
+    }
+
+    function getAbsensi(username) {
+      const key = getTodayKey(username);
+      return JSON.parse(localStorage.getItem(key) || "[]");
+    }
+
+    function addAbsensi(username, status) {
+      const key = getTodayKey(username);
+      let data = getAbsensi(username);
+      const now = new Date();
+      const waktu = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+      data.push({ waktu, status });
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function showAbsensi(username) {
+      const absensi = getAbsensi(username);
+      absensiTableBody.innerHTML = "";
+      if(absensi.length === 0) {
+        absensiTableBody.innerHTML = `<tr><td colspan="2" style="text-align:center;color:#999;">Belum ada absensi hari ini</td></tr>`;
+      } else {
+        absensi.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${item.waktu}</td><td>${item.status}</td>`;
+          absensiTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    function login(username, password) {
+      return users.find(u => u.username === username && u.password === password);
+    }
+
+    function showLogin() {
+      loginContainer.style.display = '';
+      absensiContainer.style.display = 'none';
+      loginError.style.display = 'none';
+      loginForm.reset();
+    }
+    function showAbsensiPage(user) {
+      loginContainer.style.display = 'none';
+      absensiContainer.style.display = '';
+      userNameSpan.textContent = user.username;
+      absenSuccess.style.display = 'none';
+      showAbsensi(user.username);
+    }
+
+    // Cek apakah sudah login
+    window.onload = function() {
+      const user = getSession();
+      if(user) {
+        showAbsensiPage(user);
+      } else {
+        showLogin();
+      }
+    };
+
+    // Proses login
+    loginForm.onsubmit = function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const user = login(username, password);
+      if(user) {
+        setSession(user);
+        showAbsensiPage(user);
+      } else {
+        loginError.textContent = "Nama pengguna atau kata sandi salah!";
+        loginError.style.display = '';
+      }
+    };
+
+    // Tombol absen
+    absenBtn.onclick = function() {
+      const user = getSession();
+      if(!user) return;
+      addAbsensi(user.username, "Masuk");
+      absenSuccess.textContent = "Absen berhasil!";
+      absenSuccess.style.display = '';
+      setTimeout(()=> absenSuccess.style.display = 'none', 1700);
+      showAbsensi(user.username);
+    };
+
+    // Tombol logout
+    logoutBtn.onclick = function() {
+      clearSession();
+      showLogin();
+    };
+
+    // Agar session tetap saat refresh
+    window.addEventListener('storage', function(event){
+      if(event.key === "absensiUser" && !event.newValue) {
+        showLogin();
+      }
+    })
+  </script>
+</body>
+</html>
